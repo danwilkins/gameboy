@@ -1,0 +1,38 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "assemble",
+            "type": "shell",
+            "command": "\"assembler/rgbasm.exe\" -o hello.o hello.asm",
+            "problemMatcher": []
+        },
+        {
+            "label": "link",
+            "type": "shell",
+            "command": "\"assembler/rgblink.exe\" -o hello.gb hello.o",
+            "problemMatcher": [],
+            "dependsOn":["assemble"]
+        },
+        {
+            "label": "cleanup",
+            "type": "shell",
+            "command": "\"assembler/rgbfix.exe\" -v -p 0 hello.gb",
+            "problemMatcher": [],
+            "dependsOn":["link"]
+        },
+        {
+            "label": "debug",
+            "type": "shell",
+            "command": "\"debugger/NO$GMB.EXE\" ../hello.gb",
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "dependsOn":["cleanup"]
+        },
+    ]
+}
