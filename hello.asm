@@ -51,28 +51,24 @@ ld bc, FontTilesEnd - FontTiles	; Length of font tiles
 	jr nz, .copyFont	; Loop if not done yet
 
 ld hl, _SCRN0+$20		; This will print the string at the top-left corner of the screen
-ld bc, $1A
-ld de, SudokuBoard
+ld bc, $1A				; Sudoku board is 5 sprites width so this is 32-5 (for line wrap)
+ld de, SudokuBoard		; Load the sudoku board sprite order address
 .copyBoard
-	ld a, [de]
-	inc de
-	cp a, $FE
-	jr z, .nextLine
-	cp a, $FF
-	jr z, .bgSet
-	ld [hli], a
-	jr .copyBoard
+	ld a, [de]			; Get the current sudoku board sprite index value
+	inc de				; Go to the next sprite index
+	cp a, $FE			; If this is a new line (Randomly selected $FE to denote this)
+	jr z, .nextLine		; 	then go to next line logic
+	cp a, $FF			; If this is the end of the sudoku board
+	jr z, .bgSet		;	then go to setting the background color
+	ld [hli], a			; Otherwise, copy the sprite into VRAM to display it and increment
+	jr .copyBoard		; Continue to copy the rest of the board
 .nextLine
-	add hl, bc
-	jr .copyBoard
+	add hl, bc			; Add the line offset (32-5) to our current address counter
+	jr .copyBoard		; Continue to copy the rest of the board
 
 .bgSet
 	ld a, %11100100		; Pick a background color
 	ld [rBGP], a		; Set the background color
-
-.drawCursor
-	ld a, $04
-	ld [_SCRN0], a		; Cursor value is 4
 
 xor a					; Zero out a register
 ld [rSCY], a			; Set scroll y to 0
@@ -84,109 +80,101 @@ ld [rLCDC], a			; Set LCD flags
 
 xor a
 .lockup
-	cp a, $00
-	jr nz, .lockup
-	di
-	call .joy_con
-	call .read
-	xor a
-	ei
+	cp a, $00			; Check to see if v-blank has happened (a is 0 on vblank)
+	jr nz, .lockup		; If not, then return to waiting for v-blank
+	di					; Disable interrupts so v-blank doesn't bother us
+	call .joy_con		; Get the value of the joy-con and store it into a
+	call .read			; Use the value of a to print out the inputs to the screen
+	ei					; Enable interrupts again
 	ld a, %00000001		; We only want the v-blank interrupt
 	ld [rIE], a			; Set the interrupts flags
 jr .lockup				; Game lockup loop
 
 .joy_con
-	ld a, $20
-	ld [rP1], a
-	ld a, [rP1]
-	ld a, [rP1]		; Wait a few cycles
-	cpl 			; Complement a
-	and $0f			; Only get first 4 bits
-	swap a
-	ld b, a
-	ld a, $10
-	ld [rP1], a
-	ld a, [rP1]
-	ld a, [rP1]
-	ld a, [rP1]
-	ld a, [rP1]
-	ld a, [rP1]
-	ld a, [rP1]
-	cpl
-	and $0f
-	or b
-	ret
+	ld a, $20			; Set the flag for checking the d-pad
+	ld [rP1], a			; Tell the device we want to read the d-pad
+	ld a, [rP1]			; Read the d-pad
+	cpl 				; Complement a
+	and $0F				; Only get first 4 bits
+	swap a				; Swap the low 4 bits with the high 4 bits
+	ld b, a				; Copy the d-pad inputs to b for now
+	ld a, $10			; Set the flag for checking the other buttons
+	ld [rP1], a			; Tell the device we want to read the other buttons
+	ld a, [rP1]			; Read the other buttons
+	cpl					; Complement a
+	and $0F				; Only get first 4 bits
+	or b				; Combine d-pad and other buttons into single byte
+	ret					; Return to caller
 
 .read
-	ld b, a
-	xor a					; Set a to 0
-	ld [rLCDC], a			; Turn off the LCD by writing 0
-	ld a, b
+	ld b, a				; Get a backup of current pressed buttons
+	xor a				; Set a to 0
+	ld [rLCDC], a		; Turn off the LCD by writing 0
 	ld hl, _SCRN0
+	ld de, Inputs
 	; Going to do this the dumb way for testing
-		ld de, Inputs
-		and JOY_LEFT
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_UP
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_RIGHT
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_DOWN
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_A
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_B
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_START
-		call z, .erase_sprite
-		call nz, .write_sprite
-		inc de
-		ld a, b
-		and JOY_SELECT
-		call z, .erase_sprite
-		call nz, .write_sprite
+		ld a, b					; Restore inputs back into a
+		and JOY_LEFT			; Check if the left button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_UP				; Check if the up button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_RIGHT			; Check if the right button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_DOWN			; Check if the down button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_A				; Check if the a button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_B				; Check if the b button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_START			; Check if the start button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
+		inc de					; Go to the next letter to write
+		ld a, b					; Restore inputs back into a
+		and JOY_SELECT			; Check if the select button was pressed
+		call z, .erase_sprite	; If not erase the sprite
+		call nz, .write_sprite	; If so write the corresponding letter
 	; End of dumb
 	ld a, %10000001			; Bit 7 = screen on, bit 0 = background on
 	ld [rLCDC], a			; Set LCD flags
-	ret
-
+	ret						; Return to caller
 .erase_sprite
-	ld a, $00
-	ld [hli], a
-	ret
+	ld a, $00				; Set a blank sprite index
+	ld [hli], a				; Write the blank sprite to VRAM
+	ret						; Return to caller
 .write_sprite
-	ld a, [de]
-	ld [hli], a
-	ret
+	ld a, [de]				; Set the current input sprite index
+	ld [hli], a				; Write the current input sprite to VRAM
+	ret						; Return to caller
 
-SECTION "Font", ROM0	; No need to declare where to put this code, let assembler pick
+SECTION "Font", ROM0			; No need to declare where to put this code, let assembler pick
 FontTiles:
-INCBIN "font.chr"		; Copy contents of file to right here
+INCBIN "font.chr"				; Copy contents of file to right here
 FontTilesEnd:
 
-SECTION "Strings", ROM0	; No need to declare where to put this code, let assembler pick
+SECTION "Strings", ROM0			; No need to declare where to put this code, let assembler pick
 Inputs:
-    db "LURDABSE"		; Define byte (ascii string) 0 is string null terminator
+    db "LURDABSE"				; Define byte (ascii string) 0 is string null terminator
 
-SECTION "Sudoku Board", rom0
+SECTION "Sudoku Board", ROM0	; No need to declare where to put this code, let assembler pick
 SudokuBoard:
 	; $00 = blank, $01 = cross, $02 = vertical, $03 = horizontal
 	db $00, $02, $00, $02, $00, $FE,
