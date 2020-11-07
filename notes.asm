@@ -69,6 +69,7 @@
 ; 0000 0000 | 0000 0000 | 1st & 3rd pixels are white                          ;
 ;=============================================================================;
 
+; Disassembler:  https://github.com/mattcurrie/mgbdis
 ; Tons of info:  https://github.com/gbdev/awesome-gbdev
-; VSCode Syntax:  https://marketplace.visualstudio.com/items?itemName=donaldhays.rgbds-z80
 ; VSCode HEX:  https://marketplace.visualstudio.com/items?itemName=ms-vscode.hexeditor
+; VSCode Syntax:  https://marketplace.visualstudio.com/items?itemName=donaldhays.rgbds-z80
