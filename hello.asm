@@ -26,7 +26,7 @@ Start:
 
 xor a					; Set a to 0
 ld [rLCDC], a			; Turn off the LCD by writing 0
-ld hl, $9000			; Tile location to write to
+ld hl, $9000			; Tile location to write to ($8000-$9FFF is VRAM)
 ld de, FontTiles		; Start address for font tiles
 ld bc, FontTilesEnd - FontTiles	; Length of font tiles
 

@@ -53,4 +53,22 @@
 ;	$10	Joypad	$0060	lowest priority;	;
 ;===========================================;
 
+;============================ Tile graphic memory ============================;
+; VRAM starts at address $8000 and ends at address $9FFF which represent a    ;
+; total of 128 tiles. This memory can be changed on the fly to copy in other  ;
+; tiles from the ROM cartridge or dynamically generate tiles on the fly.      ;
+;                                                                             ;
+; Tiles are 8x8 pixels each containing 1 of 4 colors (white, light grey,      ;
+; dark gray, and black). Each line of 8 pixels is shaded by using 16          ;
+; consecutive bits. Each bit represents a single pixel along the raw. Each    ;
+; overlapping bit represents the shade of the pixel (of the 4 mentioned).     ;
+; 1st byte  | 2nd byte  | Result                                              ;
+; 1010 0000 | 1010 0000 | 1st & 3rd pixels are black                          ;
+; 0000 0000 | 1010 0000 | 1st & 3rd pixels are dark gray                      ;
+; 1010 0000 | 0000 0000 | 1st & 3rd pixels are light gray                     ;
+; 0000 0000 | 0000 0000 | 1st & 3rd pixels are white                          ;
+;=============================================================================;
+
 ; Tons of info:  https://github.com/gbdev/awesome-gbdev
+; VSCode Syntax:  https://marketplace.visualstudio.com/items?itemName=donaldhays.rgbds-z80
+; VSCode HEX:  https://marketplace.visualstudio.com/items?itemName=ms-vscode.hexeditor
